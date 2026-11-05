@@ -1,0 +1,34 @@
+[
+  {
+    "id": "prod-001",
+    "name": "API Monitoring",
+    "category": "observability",
+    "price": 49.99,
+    "active": true,
+    "tags": ["monitoring", "api"]
+  },
+  {
+    "id": "prod-002",
+    "name": "Log Analyzer",
+    "category": "observability",
+    "price": 29.99,
+    "active": true,
+    "tags": ["logs", "debugging"]
+  },
+  {
+    "id": "prod-003",
+    "name": "Legacy Dashboard",
+    "category": "analytics",
+    "price": 19.99,
+    "active": false,
+    "tags": ["dashboard"]
+  },
+  {
+    "id": "prod-004",
+    "name": "Incident Tracker",
+    "category": "incident-management",
+    "price": 99.99,
+    "active": true,
+    "tags": ["incidents", "workflow"]
+  }
+]
