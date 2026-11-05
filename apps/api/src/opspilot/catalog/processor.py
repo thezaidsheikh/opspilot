@@ -91,3 +91,14 @@ class CatalogProcessor:
             categories=tuple(sorted(self.unique_categories())),
             average_active_price=round(average_price, 2),
         )
+
+    def filter_products(self, minPrice: float, catagory: str) -> list[Product]:
+        """Filter products by minimum price and category."""
+        return sorted(
+            [
+                product
+                for product in self._products
+                if product.price >= minPrice and product.category == catagory
+            ],
+            key=lambda product: product.price,
+        )

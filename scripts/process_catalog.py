@@ -28,6 +28,10 @@ def main() -> None:
     for product in processor.active_products():
         print(f"- {product.name} (${product.price:.2f})")
 
+    print("\nFiltered Products")
+    for product in processor.filter_products(minPrice=25.0, catagory="observability"):
+        print(f"- {product.name} (${product.price:.2f})")
+
 
 if __name__ == "__main__":
     main()
