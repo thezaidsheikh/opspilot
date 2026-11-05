@@ -1,6 +1,6 @@
 """Product catalog processing package."""
 
-from opspilot.catalog.processor import (
+from .processor import (
     CatalogProcessor,
     CatalogSummary,
     Product,
