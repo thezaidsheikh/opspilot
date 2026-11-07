@@ -1,3 +1,7 @@
+from dataclasses import FrozenInstanceError
+
+import pytest
+
 from opspilot.catalog import CatalogProcessor, Product
 
 SAMPLE_RECORDS = [
@@ -112,8 +116,5 @@ def test_product_is_immutable() -> None:
         tags=("monitoring",),
     )
 
-    try:
-        product.name = "Changed"
-        assert False, "Expected immutable product"
-    except AttributeError:
-        pass
+    with pytest.raises(FrozenInstanceError):
+        setattr(product, "name", "Changed")  # noqa: B010

@@ -1,4 +1,5 @@
 import pytest
+
 from opspilot.incidents import (
     Incident,
     IncidentPriority,

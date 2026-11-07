@@ -1,6 +1,41 @@
+
+# Python environments
 .venv/
+venv/
+env/
+
+# Python cache
 __pycache__/
 *.py[cod]
+*.pyo
+
+# Packaging
+*.egg-info/
+build/
+dist/
+
+# Testing
 .pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Linters and type checkers
+.ruff_cache/
+.pyright/
+
+# Environment variables and secrets
 .env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# OS and IDE
 .DS_Store
+.idea/
+
+# Temporary files
+*.tmp
+*.bak
