@@ -14,7 +14,7 @@ from opspilot.ingestion import (
     process_log_file,
 )
 
-VALID_LINES = [
+VALID_LINES: list[dict[str, object]] = [
     {"level": "INFO", "service": "payment-api", "message": "charge succeeded"},
     {"level": "ERROR", "service": "payment-api", "message": "charge failed"},
     {"level": "WARNING", "service": "auth", "message": "slow login"},
@@ -49,9 +49,7 @@ def test_process_valid_lines(tmp_path: Path) -> None:
             message="charge failed",
             line_number=2,
         ),
-        LogRecord(
-            level="WARNING", service="auth", message="slow login", line_number=3
-        ),
+        LogRecord(level="WARNING", service="auth", message="slow login", line_number=3),
     ]
     assert summary.total_lines == 3
     assert summary.processed_count == 3
@@ -188,3 +186,18 @@ def test_error_types_are_distinct(tmp_path: Path) -> None:
 
     assert issubclass(LogFileReadError, LogFileError)
     assert not issubclass(LogLineError, Exception)
+
+
+def test_sample_data_file_processes_with_four_skips() -> None:
+    """The repo's sample log: 9 non-blank lines, 5 good, 4 skipped."""
+    sample = Path(__file__).resolve().parents[2] / "data" / "incident-log-sample.jsonl"
+
+    records, summary = process_log_file(sample)
+
+    assert summary.total_lines == 9
+    assert summary.processed_count == 5
+    assert summary.skipped_count == 4
+    assert [error.line_number for error in summary.errors] == [4, 5, 6, 7]
+    assert records[0].service == "payment-api"
+    assert records[0].level == "ERROR"
+    assert records[-1].extra["runbook"] == "runbooks/payment-db-outage.md"

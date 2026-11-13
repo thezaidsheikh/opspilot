@@ -108,11 +108,7 @@ def _parse_line(raw: str, line_number: int) -> LogRecord | LogLineError:
                 raw=raw,
             )
 
-    extra = {
-        key: value
-        for key, value in payload.items()
-        if key not in REQUIRED_FIELDS
-    }
+    extra = {key: value for key, value in payload.items() if key not in REQUIRED_FIELDS}
     return LogRecord(
         level=level.upper(),
         service=payload["service"].strip(),
@@ -136,19 +132,25 @@ def _iter_parsed_lines(path: Path) -> Iterator[LogRecord | LogLineError]:
         raise LogFileReadError(f"Could not read log file {path}: {exc}") from exc
 
     with file:
-        for line_number, line in enumerate(file, start=1):
-            raw = line.strip()
-            if not raw:
-                continue
-            parsed = _parse_line(raw, line_number)
-            if isinstance(parsed, LogLineError):
-                logger.warning(
-                    "Skipping line %d in %s: %s",
-                    line_number,
-                    path,
-                    parsed.reason,
-                )
-            yield parsed
+        try:
+            for line_number, line in enumerate(file, start=1):
+                raw = line.strip()
+                if not raw:
+                    continue
+                parsed = _parse_line(raw, line_number)
+                if isinstance(parsed, LogLineError):
+                    logger.warning(
+                        "Skipping line %d in %s: %s",
+                        line_number,
+                        path,
+                        parsed.reason,
+                    )
+                yield parsed
+        except UnicodeDecodeError as exc:
+            # Decoding happens while reading, not while opening: a file
+            # with a bad byte raises here, mid-iteration. Convert it to
+            # the same file-level error as a missing file.
+            raise LogFileReadError(f"Log file is not valid UTF-8: {path}") from exc
 
 
 def iter_log_records(path: Path) -> Iterator[LogRecord]:
