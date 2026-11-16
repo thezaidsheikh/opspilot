@@ -19,12 +19,16 @@
 - **Day 2:** Names/objects, dynamic + strong typing, built-in types, conversion vs type hints, truthiness, operators, `==` vs `is`, strings (immutable, indexing/slicing, methods, f-strings). Practical corrected from product transformer to incident normalisation for `INC-1042`.
 - **Day 3:** Lists, tuples, sets, dicts, mutability/hashability, lookup complexity, comprehensions, generator expressions/functions, `yield`, lazy vs eager, iterable vs iterator. Practical: catalog processor (`Product`, `CatalogSummary`, `filter_products()` — evidenced in repo snapshot 7 Nov) and `read_error_lines()` log streaming (teaching example, not confirmed committed).
 - **Day 4:** Conditions, truthy/falsy + short-circuit, `for`/`while`/`range`, `break`/`continue`, `enumerate`/`zip`, function design, return vs print, all argument kinds (`*args`, `**kwargs`, positional-only `/`, keyword-only `*`), LEGB, `global`/`nonlocal`, stack frames, mutable-default pitfall. Practical: incident validation, severity scoring, prioritisation, `get_critical_incidents()` (proposed).
-- **Day 5:** Modules vs packages, `__init__.py` + public API, absolute/relative imports, `__name__` + `python -m`, `sys.path` / `sys.modules`, import cache + side effects, circular imports, standard library, cohesion/coupling, dependency direction, modular monolith. Practical: `Incident` model + UUID helper + factory + prioritisation — first design was `core/incidents.py` + `utils/ids.py`; later repo-aligned proposal (10 Nov) is the `incidents/` package (`models.py`, `identifiers.py`, `factory.py`, `prioritization.py`, `__init__.py`, `__main__.py`). The later design is a proposal — verify in Git history before claiming it is committed.
+- **Day 5:** Modules vs packages, `__init__.py` + public API, absolute/relative imports, `__name__` + `python -m`, `sys.path` / `sys.modules`, import cache + side effects, circular imports, standard library, cohesion/coupling, dependency direction, modular monolith. Practical: `Incident` model + UUID helper + factory + prioritisation — first design was `core/incidents.py` + `utils/ids.py`; later repo-aligned proposal (10 Nov) is the `incidents/` package (`models.py`, `identifiers.py`, `factory.py`, `prioritization.py`, `__init__.py`, `__main__.py`). **Verified 13 Nov 2026: the `incidents/` package is committed in master (12 Nov 2026, commit `e5f58a4`) — it is no longer just a proposal.**
+- **Day 6:** Exceptions (`try` / `except` / `else` / `finally`, chaining with `from exc`), the `logging` module and levels, file handling (`pathlib`, UTF-8, `with`), JSON and JSONL. Practical: robust JSONL incident-log processor in `opspilot/ingestion/` — file-level errors raise, line-level errors are skipped, logged and counted in a summary; records are a `LogRecord` dataclass, levels are normalised to upper case, extra fields are kept in `extra`; plus prompt templates in code in `opspilot/investigation/prompts.py`. Implemented on branch `learning/day-06-exceptions-logging-json`; PR #2 opened 13 Nov 2026, awaiting Zaid's review — NOT merged yet.
 
 ### System Design — overall (so far)
 - **Two-tier vs three-tier:** two-tier = client talks directly to the database (simple, logic leaks into the client). Three-tier = presentation → logic → data (each tier changes independently).
 - **Modular monolith vs microservices:** modular monolith = one deployment, strict module boundaries — right for a solo developer on 8 GB RAM. Microservices = separate deployments — powerful at scale, expensive in operations.
 - **OpsPilot decision:** three-tier + modular monolith. Frontend Next.js, logic FastAPI, data PostgreSQL + pgvector. Split a module out only if it genuinely needs independent scaling — record that in an ADR.
+- **Error handling & resilience (Day 6):** fail fast (raise) for errors you cannot recover from — missing file, not UTF-8. Skip-and-log for errors you can recover from — one bad line in a 10,000-line log. Bounded retry only for transient errors (timeout); never retry a permanent error like bad JSON.
+- **Logging levels (Day 6):** DEBUG (developer detail) / INFO (normal flow) / WARNING (odd, run continues) / ERROR (failed, needs attention) / CRITICAL (cannot continue). Skipping a bad log line is a WARNING; a missing file is an ERROR.
+- **Structured logging (Day 6):** logs as fields (level, service, message, time) — searchable and countable, unlike a plain sentence.
 
 ### AI — overall (so far)
 - **LLM:** predicts the next most likely text. It does not know your system unless you show it.
@@ -32,6 +36,8 @@
 - **Prompt:** instructions + context + question, in one message.
 - **Grounding / RAG:** retrieve relevant documents first, then generate a cited answer from them. This is the defence against hallucination. OpsPilot's core idea.
 - **Status:** the AI topics in the roadmap below are **to be learned and implemented** — they were explicitly *not* part of Days 1–5. Do not claim them as done until the day's PR is merged.
+- **Structured output (Day 6):** an LLM must return JSON matching a schema, not prose — otherwise the next pipeline step cannot trust, test or cite it. Validate LLM output at the boundary like any other input; invalid output is retried once, then "I don't know".
+- **Prompt templates in code (Day 6):** system prompt + builder functions in `opspilot/investigation/prompts.py`, not hardcoded strings in handlers. The grounding rule ("answer only from the evidence") is enforced in one place. Implemented on branch, PR #2 open, not merged yet.
 
 ### Key terms — sab ek jagah
 | Term | 2–3 lines, example ke saath |
@@ -63,6 +69,17 @@
 | Hallucination | A confident, fluent, wrong answer — e.g. inventing a config value that does not exist. |
 | Pydantic | Python validation from type hints, like Zod for TypeScript. |
 | Domain model | A class for a business concept, e.g. `Incident`, not a database row. |
+| Exception | A runtime error that interrupts normal flow, e.g. a missing file or malformed JSON. |
+| Fail fast | Stop loudly when recovery is impossible, e.g. missing input file → raise, don't return an empty result. |
+| Graceful degradation | Keep working with reduced function, e.g. skip 3 bad lines, process the rest, report the 3. |
+| Structured logging | Logs as fields (level, service, message), searchable and countable. |
+| Structured output | LLM output in a fixed JSON shape matching a schema, not prose. |
+| JSONL | One JSON object per line in a file, streamed lazily line by line. |
+| Exception chaining | `raise NewError(...) from exc` — the new error keeps the original cause visible in the trace. |
+| Prompt template | A prompt stored as a named constant / builder function in code, not a hardcoded string in a handler. |
+| Bounded retry | Retrying a transient error (timeout) a fixed number of times, never forever, never for permanent errors. |
+| `LogFileError` / `LogLineError` | File-level error (raise) vs line-level error (skip, log, count) in OpsPilot's ingestion. |
+| `LogRecord` | One validated log record (level, service, message, line number, extra fields), returned by the Day 6 processor. |
 
 ---
 
@@ -271,6 +288,38 @@
 
 ---
 
+## Day 6 — 13 Nov 2026 (Muse lesson): Exceptions, logging, debugging, file handling, JSON
+
+**Status: Studied + implemented on branch `learning/day-06-exceptions-logging-json` — PR #2 opened 13 Nov 2026, awaiting Zaid's review, NOT merged. Do not claim it as in master until the PR is merged.**
+
+**Repo state this lesson is built on:** OpsPilot `master` at merge commit `a90bb62` (LEARNING-NOTES.md merged in PR #1). Two 12 Nov commits are now verified in master: the `incidents/` package refactor (`e5f58a4`) and validated catalog JSON loading + CLI (`catalog/json_io.py`, `scripts/process_catalog.py`, `14f9e1c`). Day 6 builds on the catalog loader: whole-file JSON fails fast, streaming JSONL degrades gracefully — different input, different rule.
+
+**Verified by running, 13 Nov 2026:** `pytest` 65 passed, `ruff check` clean, `ruff format --check` clean, `pyright` 0 errors (with the venv interpreter). CLI verified: sample log processes 5 of 9 lines, skips 4 with reasons, exit 0; missing file exits 2. Honest note: the branch as first pushed had 1 failing test (`test_invalid_utf8_raises_and_chains`) plus 2 unformatted files and 10 pyright errors — all fixed on the branch before review (see the UTF-8 note below).
+
+- **Exceptions:** `try` runs the risky code; `except` handles a *specific* error type (never a bare `except:` — it hides bugs); `else` runs only if no exception happened; `finally` always runs (cleanup). `raise` creates the error; `raise ... from exc` chains it, keeping the original cause visible in the trace.
+- **Two error layers (the Day 6 design decision):** file-level errors raise (`LogFileError` / `LogFileReadError` — missing file, unreadable, not UTF-8) because the run cannot start; line-level errors are skipped, logged as warnings and counted (`LogLineError` + `LogProcessingSummary`) because one bad line must never kill a 10,000-line batch. Know which input you are building for: a catalog file fails fast (a bad record means the dataset can't be trusted), a log stream degrades gracefully.
+- **Logging module:** `logging.getLogger(__name__)` gives each module its own logger. Levels: DEBUG / INFO / WARNING / ERROR / CRITICAL. Library code uses `logger.warning(...)` / `logger.info(...)`, not `print()`. Only the CLI entry point configures formatting/level (`logging.basicConfig`).
+- **File handling:** open with `pathlib.Path.open(encoding="utf-8")` inside `with` (closes the file even on error). Read line by line — never `read()` a huge log whole into memory. **UTF-8 gotcha, found by a failing test:** decoding happens while *reading*, not while *opening* — `open()` succeeds on a file with a bad byte, the `UnicodeDecodeError` fires mid-iteration. So the `try/except UnicodeDecodeError` must wrap the read loop, not just the `open()` call.
+- **JSON / JSONL:** `json.loads()` parses one string; `json.JSONDecodeError` carries line/column for the message. JSONL = one JSON object per line, so a file streams lazily with a generator (`iter_log_records`, Day 3 `yield` applied). Each line needs `level`, `service` and `message`; `level` is normalised to upper case (`"info"` → `"INFO"`); `service`/`message` are stripped; extra fields (timestamp, request_id, runbook) are preserved in the record's `extra` dict. Skip reasons: `"Invalid JSON: ..."`, `"Expected a JSON object; found ..."`, `"Missing required field '...'"`, `"Unknown log level: ..."`, `"Field '...' must be a non-empty string"`.
+- **Debugging:** read the *first* failure only, fix that, re-run. The summary counts (`total_lines`, `processed_count`, `skipped_count`, per-line reasons) are the debugging tool — check counts instead of guessing. `processed + skipped == total_lines` always holds.
+- **Structured output (AI hour):** an LLM must return JSON matching a schema, not prose — code cannot reliably parse a paragraph. Validate LLM output at the boundary like any other input (same discipline as `json.loads()` + validation): invalid output is retried once, then "I don't know".
+- **Prompt templates in code (AI hour):** `opspilot/investigation/prompts.py` — `SYSTEM_PROMPT` constant + `incident_summary_prompt(incident, evidence="")` builder. Prompts are versioned, reviewed and tested like code; the grounding rule lives in one place. With no evidence the prompt says so explicitly ("No evidence retrieved yet."), so the model must say "I don't know" instead of guessing.
+
+**Practical — implemented (branch, PR #2 open):** `opspilot/ingestion/jsonl.py` (`LogRecord`, `LogFileError`/`LogFileReadError`, `LogLineError`, `LogProcessingSummary`, `iter_log_records`, `process_log_file`), `opspilot/investigation/prompts.py`, `scripts/process_incident_log.py` CLI, `data/incident-log-sample.jsonl` (9 non-blank lines: 5 good, 4 skipped — bad JSON, missing `message`, non-object, unknown level `FATAL`), 16 Day 6 tests (13 ingestion incl. sample-data test + 3 prompts). **Zaid's small task (5–10 min, his only code today):** add one test for a malformed log line with a missing `service` field — skipped, counted, good lines still processed.
+
+**Interview Q&A:**
+1. Q: Why not catch every exception and continue? A: Then a missing file looks like an empty result and a real problem hides. Raise what you cannot recover from; skip-and-log only what you can.
+2. Q: When do you retry an error? A: Only transient errors — a timeout, a busy service. Never retry a permanent error like bad JSON; bound every retry, or it runs forever.
+3. Q: Why structured logging instead of print? A: Logs with fields (level, service, message) can be searched, counted and alerted on. A plain sentence cannot.
+4. Q: Why force an LLM to return JSON? A: Because code cannot reliably parse a paragraph. JSON with a schema can be validated, tested and passed to the next step.
+5. Q: What do you do when the LLM returns invalid JSON? A: Reject it at the boundary, retry once with the schema repeated, and if it still fails, say "I don't know" instead of inventing an answer.
+6. Q: How does OpsPilot handle a malformed log line? A: It is skipped, logged as a warning with its line number and reason, counted in the summary, and processing continues with the next line.
+7. Q: Why does the catalog loader fail the whole file instead? A: A catalog is a complete dataset — a bad record means the data cannot be trusted as a whole. A log stream is different: one bad line does not invalidate the other 9,997.
+8. Q: What does `from exc` do? A: It chains exceptions — the new, clearer error keeps the original error attached, so the stack trace still shows the real cause.
+9. Q: When does a UTF-8 error actually fire when reading a file? A: While reading, not while opening — `open()` succeeds, the decode error fires mid-iteration. That is why the `try/except UnicodeDecodeError` wraps the read loop.
+
+---
+
 ## What is confirmed vs not confirmed (repo evidence, 7 Nov snapshot)
 
 | Work | Evidence status |
@@ -281,14 +330,17 @@
 | Day 2 incident transformer | Exercise direction discussed; exact committed path not confirmed |
 | Day 4 `incident_logic.py` proposal | Lesson proposal; exact committed file not confirmed |
 | Day 5 `core/incidents.py` + `utils/ids.py` design | Lesson structure discussed; do not infer all files were committed |
-| Later `incidents/` package refactor | Repository-aligned follow-up proposal; verify current Git history before claiming completion |
+| Later `incidents/` package refactor | **Confirmed committed 12 Nov 2026 (`e5f58a4`) — verified in master 13 Nov** |
 | `read_error_lines()` generator | Teaching example; exact committed file not confirmed |
+| Validated catalog JSON loading + CLI (`catalog/json_io.py`, `scripts/process_catalog.py`) | **Confirmed committed 12 Nov 2026 (`14f9e1c`) — verified in master 13 Nov** |
+| `LEARNING-NOTES.md` itself | **Merged 13 Nov 2026 (PR #1, merge commit `a90bb62`) — verified in master** |
+| Day 6 JSONL processor + prompt templates + CLI + sample data | **Implemented on branch `learning/day-06-exceptions-logging-json`, PR #2 opened 13 Nov 2026, NOT merged — awaiting review. Tests run: 65 passed, ruff + pyright clean.** |
 
 ## Topics NOT in Days 1–5 (do not pull them in early)
 
-Day 6: exceptions, logging, debugging, file handling, JSON as a dedicated robust-processing lesson. Day 8: OOP, inheritance, composition, dataclasses (dedicated). Day 9: type hints, generics, protocols, Pydantic (dedicated). Day 10: iterators/generators (dedicated), decorators, context managers. Day 11: async/await, asyncio, concurrency, HTTP clients. FastAPI, PostgreSQL, Redis, Docker. NumPy, ML, neural networks, Transformers, LLM internals. Prompt engineering, RAG, embeddings, vector search. Tool calling, agents, LangGraph, MCP. Evaluation, observability, cloud deployment, production AI operations.
+Day 6: exceptions, logging, debugging, file handling, JSON — **done 13 Nov 2026 (this lesson; implementation on branch, PR #2 open, not merged)**. Day 8: OOP, inheritance, composition, dataclasses (dedicated). Day 9: type hints, generics, protocols, Pydantic (dedicated). Day 10: iterators/generators (dedicated), decorators, context managers. Day 11: async/await, asyncio, concurrency, HTTP clients. FastAPI, PostgreSQL, Redis, Docker. NumPy, ML, neural networks, Transformers, LLM internals. Prompt engineering, RAG, embeddings, vector search. Tool calling, agents, LangGraph, MCP. Evaluation, observability, cloud deployment, production AI operations.
 
-**Next day — Day 6 (Fri 13 Nov 2026):** exceptions, logging, debugging, file handling, JSON — robust processing of incident/catalog data. Implementation target: a log/JSON processor that handles malformed lines without crashing the whole run, with tests.
+**Next day — Day 7 (Sat 14 Nov 2026): topic NOT specified in the roadmap — the Python sequence jumps from Day 6 to Day 8 (OOP/dataclasses). Do not invent a Day 7 topic; confirm it with Zaid (or check the ChatGPT handbook) before preparing.**
 
 ---
 
@@ -299,6 +351,7 @@ Day 6: exceptions, logging, debugging, file handling, JSON as a dedicated robust
 **Day 3:** list/tuple/set/dict · mutability/hashability · lookup complexity · comprehensions · eager vs lazy generators · iterable/iterator/generator · `yield` · catalog processor · `read_error_lines()`.
 **Day 4:** conditions + truthiness · short-circuit · `for`/`while` · `range`/`break`/`continue`/`pass` · `enumerate`/`zip` · return vs print · all argument kinds · LEGB, `global`/`nonlocal` · stack frames · mutable defaults · incident validation/scoring/prioritisation/filtering/summary.
 **Day 5:** module vs package · `__init__.py` + public exports · absolute vs relative imports · `__name__` + `python -m` · `sys.path`/`sys.modules` · import cache + side effects · circular imports · stdlib modules · cohesion/coupling · modular monolith · incident package (both designs, and which is which).
+**Day 6:** `try`/`except`/`else`/`finally` · `from exc` chaining · fail fast vs skip-and-log · logging levels · structured logging · `pathlib` + `with` file handling · JSON/JSONL · UTF-8 decode fires on read, not open · generator streaming of log lines · `LogRecord` (level normalised, extra fields) · `LogFileError` vs `LogLineError` · `LogProcessingSummary` counts · structured LLM output + prompt templates in code · sample log: 5 processed, 4 skipped.
 
 ## One-minute interview explanation
 
