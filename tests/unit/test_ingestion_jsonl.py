@@ -114,6 +114,28 @@ def test_non_object_line_is_skipped(tmp_path: Path) -> None:
     assert all("Expected a JSON object" in e.reason for e in summary.errors)
 
 
+def test_missing_service_is_skipped_and_counted(tmp_path: Path) -> None:
+    missing_service = {"level": "ERROR", "message": "payment timeout"}
+    lines = [
+        json.dumps(VALID_LINES[0]),
+        json.dumps(missing_service),
+        json.dumps(VALID_LINES[1]),
+    ]
+    log_path = _write_log(tmp_path, "missing-service.jsonl", lines)
+
+    records, summary = process_log_file(log_path)
+
+    assert [record.message for record in records] == [
+        "charge succeeded",
+        "charge failed",
+    ]
+    assert summary.total_lines == 3
+    assert summary.processed_count == 2
+    assert summary.skipped_count == 1
+    assert summary.errors[0].line_number == 2
+    assert summary.errors[0].reason == "Missing required field 'service'"
+
+
 def test_missing_message_is_skipped(tmp_path: Path) -> None:
     record = {"level": "INFO", "service": "payment-api"}
     lines = [_as_jsonl(VALID_LINES[:1])[0], json.dumps(record)]

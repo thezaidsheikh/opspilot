@@ -3,7 +3,7 @@
 **Master revision notes. GitHub is the master copy — this file lives in the OpsPilot repo so it is never lost if a local file is lost.**
 **Read this file top to bottom for fast interview revision. Every new day appends a section here and updates the Overall summary at the top.**
 
-**Plan:** 60-day plan, 12 Nov 2026 – 11 Jan 2027 (8 weeks + 5-day interview sprint). 1 hour System Design, 1 hour AI, 1 hour OpsPilot project, every day. Study starts ~06:30 IST; the day's lesson is prepared by 06:00 IST.
+**Curriculum source of truth:** the Applied AI Engineering 72-day / 12-week roadmap in the AI Engineering project. Preserve its day order, topics, deliverables, and assessments. These notes record evidence and progress; they do not define a replacement curriculum. Study starts around 06:30 IST; the daily lesson and implementation follow the next incomplete roadmap day.
 **Format:** 20 min concept + 40 min apply/build per hour. Every topic with an example in English / Indian English mix. Every new term in 2–3 lines with an example.
 **Rule:** If a day is missed, do not double up — continue from where you left off.
 **Honesty rule for interviews:** say "I studied" for concepts learned, "I implemented" only for code that exists and can be demonstrated in the repo, and "I proposed/designed" for structures not yet verified as committed.
@@ -20,7 +20,9 @@
 - **Day 3:** Lists, tuples, sets, dicts, mutability/hashability, lookup complexity, comprehensions, generator expressions/functions, `yield`, lazy vs eager, iterable vs iterator. Practical: catalog processor (`Product`, `CatalogSummary`, `filter_products()` — evidenced in repo snapshot 7 Nov) and `read_error_lines()` log streaming (teaching example, not confirmed committed).
 - **Day 4:** Conditions, truthy/falsy + short-circuit, `for`/`while`/`range`, `break`/`continue`, `enumerate`/`zip`, function design, return vs print, all argument kinds (`*args`, `**kwargs`, positional-only `/`, keyword-only `*`), LEGB, `global`/`nonlocal`, stack frames, mutable-default pitfall. Practical: incident validation, severity scoring, prioritisation, `get_critical_incidents()` (proposed).
 - **Day 5:** Modules vs packages, `__init__.py` + public API, absolute/relative imports, `__name__` + `python -m`, `sys.path` / `sys.modules`, import cache + side effects, circular imports, standard library, cohesion/coupling, dependency direction, modular monolith. Practical: `Incident` model + UUID helper + factory + prioritisation — first design was `core/incidents.py` + `utils/ids.py`; later repo-aligned proposal (10 Nov) is the `incidents/` package (`models.py`, `identifiers.py`, `factory.py`, `prioritization.py`, `__init__.py`, `__main__.py`). **Verified 13 Nov 2026: the `incidents/` package is committed in master (12 Nov 2026, commit `e5f58a4`) — it is no longer just a proposal.**
-- **Day 6:** Exceptions (`try` / `except` / `else` / `finally`, chaining with `from exc`), the `logging` module and levels, file handling (`pathlib`, UTF-8, `with`), JSON and JSONL. Practical: robust JSONL incident-log processor in `opspilot/ingestion/` — file-level errors raise, line-level errors are skipped, logged and counted in a summary; records are a `LogRecord` dataclass, levels are normalised to upper case, extra fields are kept in `extra`; plus prompt templates in code in `opspilot/investigation/prompts.py`. Implemented on branch `learning/day-06-exceptions-logging-json`; PR #2 opened 13 Nov 2026, awaiting Zaid's review — NOT merged yet.
+- **Day 6:** Exceptions (`try` / `except` / `else` / `finally`, chaining with `from exc`), the `logging` module and levels, file handling (`pathlib`, UTF-8, `with`), JSON and JSONL. Practical: robust JSONL incident-log processor in `opspilot/ingestion/` — file-level errors raise, line-level errors are skipped, logged and counted in a summary; records are a `LogRecord` dataclass, levels are normalised to upper case, extra fields are kept in `extra`; plus prompt templates in code in `opspilot/investigation/prompts.py`. Implemented and merged in PR #2 on 16 Nov 2026 (merge commit `6d47a8e`). The missing-service regression test is now added; local checks pass, while hosted post-merge CI remains unconfirmed. See `docs/progress.md`.
+
+- **Day 7:** The roadmap defines revision, coding assessment, and a Python interview mock. User confirmed Day 7 complete on 17 Nov 2026. The assessment score and mock details were not provided, so they are not inferred. See docs/progress.md.
 
 ### System Design — overall (so far)
 - **Two-tier vs three-tier:** two-tier = client talks directly to the database (simple, logic leaks into the client). Three-tier = presentation → logic → data (each tier changes independently).
@@ -37,7 +39,7 @@
 - **Grounding / RAG:** retrieve relevant documents first, then generate a cited answer from them. This is the defence against hallucination. OpsPilot's core idea.
 - **Status:** the AI topics in the roadmap below are **to be learned and implemented** — they were explicitly *not* part of Days 1–5. Do not claim them as done until the day's PR is merged.
 - **Structured output (Day 6):** an LLM must return JSON matching a schema, not prose — otherwise the next pipeline step cannot trust, test or cite it. Validate LLM output at the boundary like any other input; invalid output is retried once, then "I don't know".
-- **Prompt templates in code (Day 6):** system prompt + builder functions in `opspilot/investigation/prompts.py`, not hardcoded strings in handlers. The grounding rule ("answer only from the evidence") is enforced in one place. Implemented on branch, PR #2 open, not merged yet.
+- **Prompt templates in code (Day 6):** system prompt + builder functions in `opspilot/investigation/prompts.py`, not hardcoded strings in handlers. The grounding rule ("answer only from the evidence") is enforced in one place. Implementation merged in PR #2 (merge commit 6d47a8e).
 
 ### Key terms — sab ek jagah
 | Term | 2–3 lines, example ke saath |
@@ -290,7 +292,7 @@
 
 ## Day 6 — 13 Nov 2026 (Muse lesson): Exceptions, logging, debugging, file handling, JSON
 
-**Status: Studied + implemented on branch `learning/day-06-exceptions-logging-json` — PR #2 opened 13 Nov 2026, awaiting Zaid's review, NOT merged. Do not claim it as in master until the PR is merged.**
+**Status: Lesson studied; implementation merged in PR #2 on 16 Nov 2026 (merge commit `6d47a8e`). Missing-service regression test and post-merge verification are tracked in `docs/progress.md`.**
 
 **Repo state this lesson is built on:** OpsPilot `master` at merge commit `a90bb62` (LEARNING-NOTES.md merged in PR #1). Two 12 Nov commits are now verified in master: the `incidents/` package refactor (`e5f58a4`) and validated catalog JSON loading + CLI (`catalog/json_io.py`, `scripts/process_catalog.py`, `14f9e1c`). Day 6 builds on the catalog loader: whole-file JSON fails fast, streaming JSONL degrades gracefully — different input, different rule.
 
@@ -305,7 +307,7 @@
 - **Structured output (AI hour):** an LLM must return JSON matching a schema, not prose — code cannot reliably parse a paragraph. Validate LLM output at the boundary like any other input (same discipline as `json.loads()` + validation): invalid output is retried once, then "I don't know".
 - **Prompt templates in code (AI hour):** `opspilot/investigation/prompts.py` — `SYSTEM_PROMPT` constant + `incident_summary_prompt(incident, evidence="")` builder. Prompts are versioned, reviewed and tested like code; the grounding rule lives in one place. With no evidence the prompt says so explicitly ("No evidence retrieved yet."), so the model must say "I don't know" instead of guessing.
 
-**Practical — implemented (branch, PR #2 open):** `opspilot/ingestion/jsonl.py` (`LogRecord`, `LogFileError`/`LogFileReadError`, `LogLineError`, `LogProcessingSummary`, `iter_log_records`, `process_log_file`), `opspilot/investigation/prompts.py`, `scripts/process_incident_log.py` CLI, `data/incident-log-sample.jsonl` (9 non-blank lines: 5 good, 4 skipped — bad JSON, missing `message`, non-object, unknown level `FATAL`), 16 Day 6 tests (13 ingestion incl. sample-data test + 3 prompts). **Zaid's small task (5–10 min, his only code today):** add one test for a malformed log line with a missing `service` field — skipped, counted, good lines still processed.
+**Practical — implemented and merged (PR #2, merge commit 6d47a8e):** `opspilot/ingestion/jsonl.py` (`LogRecord`, `LogFileError`/`LogFileReadError`, `LogLineError`, `LogProcessingSummary`, `iter_log_records`, `process_log_file`), `opspilot/investigation/prompts.py`, `scripts/process_incident_log.py` CLI, `data/incident-log-sample.jsonl` (9 non-blank lines: 5 good, 4 skipped — bad JSON, missing `message`, non-object, unknown level `FATAL`), 17 Day 6 tests (14 ingestion incl. sample-data and missing-service tests + 3 prompts). The missing-service regression test now confirms a bad line is skipped and counted while valid neighboring records still process.
 
 **Interview Q&A:**
 1. Q: Why not catch every exception and continue? A: Then a missing file looks like an empty result and a real problem hides. Raise what you cannot recover from; skip-and-log only what you can.
@@ -334,13 +336,13 @@
 | `read_error_lines()` generator | Teaching example; exact committed file not confirmed |
 | Validated catalog JSON loading + CLI (`catalog/json_io.py`, `scripts/process_catalog.py`) | **Confirmed committed 12 Nov 2026 (`14f9e1c`) — verified in master 13 Nov** |
 | `LEARNING-NOTES.md` itself | **Merged 13 Nov 2026 (PR #1, merge commit `a90bb62`) — verified in master** |
-| Day 6 JSONL processor + prompt templates + CLI + sample data | **Implemented on branch `learning/day-06-exceptions-logging-json`, PR #2 opened 13 Nov 2026, NOT merged — awaiting review. Tests run: 65 passed, ruff + pyright clean.** |
+| Day 6 JSONL processor + prompt templates + CLI + sample data | **Merged in PR #2 (merge commit `6d47a8e`). PR description reports 65 tests before merge; current verification is recorded in `docs/progress.md`. The missing-service regression test was absent at reconciliation.** |
 
 ## Topics NOT in Days 1–5 (do not pull them in early)
 
-Day 6: exceptions, logging, debugging, file handling, JSON — **done 13 Nov 2026 (this lesson; implementation on branch, PR #2 open, not merged)**. Day 8: OOP, inheritance, composition, dataclasses (dedicated). Day 9: type hints, generics, protocols, Pydantic (dedicated). Day 10: iterators/generators (dedicated), decorators, context managers. Day 11: async/await, asyncio, concurrency, HTTP clients. FastAPI, PostgreSQL, Redis, Docker. NumPy, ML, neural networks, Transformers, LLM internals. Prompt engineering, RAG, embeddings, vector search. Tool calling, agents, LangGraph, MCP. Evaluation, observability, cloud deployment, production AI operations.
+Day 6: exceptions, logging, debugging, file handling, JSON — lesson studied and implementation merged in PR #2; missing-service regression test is tracked as catch-up. Day 8: OOP, inheritance, composition, dataclasses (dedicated). Day 9: type hints, generics, protocols, Pydantic (dedicated). Day 10: iterators/generators (dedicated), decorators, context managers. Day 11: async/await, asyncio, concurrency, HTTP clients. FastAPI, PostgreSQL, Redis, Docker. NumPy, ML, neural networks, Transformers, LLM internals. Prompt engineering, RAG, embeddings, vector search. Tool calling, agents, LangGraph, MCP. Evaluation, observability, cloud deployment, production AI operations.
 
-**Next day — Day 7 (Sat 14 Nov 2026): topic NOT specified in the roadmap — the Python sequence jumps from Day 6 to Day 8 (OOP/dataclasses). Do not invent a Day 7 topic; confirm it with Zaid (or check the ChatGPT handbook) before preparing.**
+**Day 7 — Week 1 revision, coding assessment, and Python interview mock.** The authoritative roadmap specifies this explicitly. User confirmed Day 7 complete on 17 Nov 2026. Assessment score and mock details were not provided and are not inferred. Day 8 is next in the roadmap sequence.
 
 ---
 
