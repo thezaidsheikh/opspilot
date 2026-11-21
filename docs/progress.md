@@ -2,7 +2,7 @@
 
 **Curriculum authority:** the 72-day / 12-week Applied AI Engineering roadmap in the AI Engineering project. This tracker records evidence; it does not redefine the roadmap.
 **Last reconciled:** 21 Nov 2026
-**Current roadmap position:** Day 8 lesson and implementation are complete locally and locally verified; the Day 8 assessment is pending. Day 2 practical evidence, hosted Day 6 CI, and Day 7 assessment details remain open catch-up evidence.
+**Current roadmap position:** Day 8 lesson and implementation are complete locally and locally verified; PR #3 is open with hosted CI passing on Python 3.12 and 3.13; the Day 8 assessment is pending. Day 2 practical evidence, hosted Day 6 CI, and Day 7 assessment details remain open catch-up evidence.
 
 ## Evidence-based status
 
@@ -15,7 +15,7 @@
 | 5 | Modules, packages, imports, standard library | Studied; implementation evidence exists | opspilot.incidents package is committed. |
 | 6 | Exceptions, logging, debugging, file handling, JSON | Lesson studied; implementation merged; regression test and local checks complete; hosted CI unconfirmed | PR #2 merged on 16 Nov 2026 as 6d47a8e. Added the missing-service regression test. Local verification on this branch: pytest 66 passed; Ruff lint passed; Ruff format check passed (34 files); Pyright 0 errors. GitHub's commit workflow query returned no runs and combined status returned no checks, so post-merge hosted CI is not confirmed. |
 | 7 | Revision, coding assessment, Python interview mock | Complete (user-confirmed) | User confirmed completion on 17 Nov 2026. Assessment score and mock details were not provided and are not inferred. |
-| 8 | OOP, classes, inheritance, composition, dataclasses | Lesson delivered; implementation complete locally; local checks passed; assessment pending | Branch `learning/day-08-oop-domain-models`. Added the `Evidence` abstraction, `LogEvidence`, `MetricEvidence`, `DeploymentEvidence`, `Investigation`, `InvestigationStatus` and `create_investigation`. New `tests/unit/test_investigation_models.py` adds 50 tests. Full suite: 116 passed. Ruff lint passed; Ruff format check passed (38 files); Pyright 0 errors. The user assessment has not been attempted, so Day 8 is not marked complete. |
+| 8 | OOP, classes, inheritance, composition, dataclasses | Lesson delivered; implementation complete locally; local checks and hosted CI passed; assessment pending | Branch `learning/day-08-oop-domain-models`, PR #3. Added the `Evidence` abstraction, `LogEvidence`, `MetricEvidence`, `DeploymentEvidence`, `Investigation`, `InvestigationStatus` and `create_investigation`. New `tests/unit/test_investigation_models.py` adds 50 tests. Full suite: 116 passed. Ruff lint passed; Ruff format check passed (38 files); Pyright 0 errors. Hosted CI run 44931512396 passed on Python 3.12 and 3.13. The user assessment has not been attempted, so Day 8 is not marked complete. |
 
 ## Day 6 catch-up checklist
 
@@ -34,6 +34,8 @@ Day 8 implementation evidence is recorded below. Keep the Day 2 practical and Da
 ## Day 8 implementation record
 
 **Branch:** `learning/day-08-oop-domain-models`
+**Commit:** `dd8dd4316b5acf9af4070f43ecc6a782497012f8`
+**Pull request:** #3 — open, not merged: https://github.com/thezaidsheikh/opspilot/pull/3
 **Lesson:** Delivered with this implementation task — OOP, classes, inheritance, composition and dataclasses.
 **Implementation:** `apps/api/src/opspilot/investigation/models.py` and `apps/api/src/opspilot/investigation/factory.py`; `apps/api/src/opspilot/investigation/__init__.py` exports updated.
 **Documentation:** `docs/architecture/domain-models.md` added; `LEARNING-NOTES.md` updated.
@@ -45,9 +47,9 @@ Day 8 implementation evidence is recorded below. Keep the Day 2 practical and Da
 - [x] Ruff lint: `make lint` — passed.
 - [x] Ruff format check: `make format-check` — 38 files already formatted.
 - [x] Pyright: `make typecheck` — 0 errors, 0 warnings.
+- [x] Hosted CI: OpsPilot CI run 44931512396 passed on Python 3.12 and 3.13 for PR #3.
 - [ ] User assessment: not attempted. Day 8 cannot be marked complete until the user completes and scores it.
-- [ ] Hosted CI for this branch: not confirmed.
-- [ ] Pull request: not created yet.
+- [ ] Merge: not performed; PR #3 remains open for review.
 
 **Open catch-up items preserved:**
 
