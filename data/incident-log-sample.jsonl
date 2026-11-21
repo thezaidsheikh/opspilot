@@ -1,0 +1,10 @@
+{"timestamp": "2026-11-13T06:00:01Z", "level": "ERROR", "service": "payment-api", "message": "payment timeout after 5000ms", "request_id": "req-001"}
+{"timestamp": "2026-11-13T06:00:04Z", "level": "WARNING", "service": "payment-api", "message": "retrying payment, attempt 2 of 3", "request_id": "req-001"}
+{"timestamp": "2026-11-13T06:00:07Z", "level": "INFO", "service": "checkout", "message": "order created", "request_id": "req-002"}
+{"level": "ERROR", "service": "payment-api", "message": "timeout
+{"level": "ERROR", "service": "payment-api"}
+["not", "an", "object"]
+{"timestamp": "2026-11-13T06:00:11Z", "level": "FATAL", "service": "payment-api", "message": "unknown level value"}
+
+{"timestamp": "2026-11-13T06:00:15Z", "level": "CRITICAL", "service": "payment-api", "message": "payment service down, 1200 users affected", "request_id": "req-001"}
+{"timestamp": "2026-11-13T06:00:18Z", "level": "ERROR", "service": "payment-api", "message": "database connection refused", "request_id": "req-003", "runbook": "runbooks/payment-db-outage.md"}
