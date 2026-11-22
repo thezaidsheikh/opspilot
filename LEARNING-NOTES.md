@@ -23,6 +23,7 @@
 - **Day 6:** Exceptions (`try` / `except` / `else` / `finally`, chaining with `from exc`), the `logging` module and levels, file handling (`pathlib`, UTF-8, `with`), JSON and JSONL. Practical: robust JSONL incident-log processor in `opspilot/ingestion/` — file-level errors raise, line-level errors are skipped, logged and counted in a summary; records are a `LogRecord` dataclass, levels are normalised to upper case, extra fields are kept in `extra`; plus prompt templates in code in `opspilot/investigation/prompts.py`. Implemented and merged in PR #2 on 16 Nov 2026 (merge commit `6d47a8e`). The missing-service regression test is now added; local checks pass, while hosted post-merge CI remains unconfirmed. See `docs/progress.md`.
 
 - **Day 7:** The roadmap defines revision, coding assessment, and a Python interview mock. User confirmed Day 7 complete on 17 Nov 2026. The assessment score and mock details were not provided, so they are not inferred. See docs/progress.md.
+- **Day 8:** OOP — classes and objects, encapsulation, abstraction, inheritance, method overriding, polymorphism, composition, dataclasses (frozen vs mutable), properties, factories and controlled state transitions. Practical: the first Investigation and Evidence domain models in `opspilot/investigation/models.py` + `factory.py` — an abstract frozen `Evidence` base, `LogEvidence` / `MetricEvidence` / `DeploymentEvidence`, and a mutable `Investigation` aggregate that composes an `Incident` and owns a private evidence list with an `OPEN → IN_PROGRESS → COMPLETED` lifecycle. Implemented on branch `learning/day-08-oop-domain-models` and opened as PR #3; 50 new tests; full local suite 116 passed; Ruff and Pyright clean; hosted CI passed on Python 3.12 and 3.13. The Day 8 assessment is still pending, so the day is not marked complete.
 
 ### System Design — overall (so far)
 - **Two-tier vs three-tier:** two-tier = client talks directly to the database (simple, logic leaks into the client). Three-tier = presentation → logic → data (each tier changes independently).
@@ -82,6 +83,15 @@
 | Bounded retry | Retrying a transient error (timeout) a fixed number of times, never forever, never for permanent errors. |
 | `LogFileError` / `LogLineError` | File-level error (raise) vs line-level error (skip, log, count) in OpsPilot's ingestion. |
 | `LogRecord` | One validated log record (level, service, message, line number, extra fields), returned by the Day 6 processor. |
+| Class vs object | A class is the blueprint (e.g. `Evidence`); an object is one instance built from it (e.g. one `LogEvidence` for one log line). |
+| Dataclass | `@dataclass` generates `__init__`, `__repr__` and `__eq__` from annotated fields, removing boilerplate while keeping the class explicit. |
+| Frozen dataclass | `@dataclass(frozen=True)` blocks attribute assignment after construction — right for facts such as evidence that must not be rewritten. |
+| Encapsulation | Keeping state private and exposing only controlled operations — `Investigation._evidence` is read through a tuple property and changed only via `add_evidence()`. |
+| Abstraction | Defining the common contract and hiding details — `Evidence` requires `summary` without caring whether the source is a log, metric or deployment. |
+| Inheritance | A subclass *is a* specialised base — `LogEvidence`, `MetricEvidence` and `DeploymentEvidence` are all `Evidence`. |
+| Polymorphism | Calling the same operation on different concrete types — `item.summary` works for every evidence object without `isinstance` branching. |
+| Composition | A class *has* another object — `Investigation` has an `Incident` and owns multiple `Evidence` objects; it does not inherit from `Incident`. |
+| `super()` / MRO | `super()` calls the next class in the Method Resolution Order; `slots=True` dataclasses are recreated, so this code calls `Evidence.__post_init__` explicitly instead. |
 
 ---
 
@@ -340,9 +350,9 @@
 
 ## Topics NOT in Days 1–5 (do not pull them in early)
 
-Day 6: exceptions, logging, debugging, file handling, JSON — lesson studied and implementation merged in PR #2; missing-service regression test is tracked as catch-up. Day 8: OOP, inheritance, composition, dataclasses (dedicated). Day 9: type hints, generics, protocols, Pydantic (dedicated). Day 10: iterators/generators (dedicated), decorators, context managers. Day 11: async/await, asyncio, concurrency, HTTP clients. FastAPI, PostgreSQL, Redis, Docker. NumPy, ML, neural networks, Transformers, LLM internals. Prompt engineering, RAG, embeddings, vector search. Tool calling, agents, LangGraph, MCP. Evaluation, observability, cloud deployment, production AI operations.
+Day 6: exceptions, logging, debugging, file handling, JSON — lesson studied and implementation merged in PR #2; missing-service regression test is tracked as catch-up. Day 8: OOP, inheritance, composition, dataclasses — implemented locally on `learning/day-08-oop-domain-models`; assessment pending. Day 9: type hints, generics, protocols, Pydantic (dedicated). Day 10: iterators/generators (dedicated), decorators, context managers. Day 11: async/await, asyncio, concurrency, HTTP clients. FastAPI, PostgreSQL, Redis, Docker. NumPy, ML, neural networks, Transformers, LLM internals. Prompt engineering, RAG, embeddings, vector search. Tool calling, agents, LangGraph, MCP. Evaluation, observability, cloud deployment, production AI operations.
 
-**Day 7 — Week 1 revision, coding assessment, and Python interview mock.** The authoritative roadmap specifies this explicitly. User confirmed Day 7 complete on 17 Nov 2026. Assessment score and mock details were not provided and are not inferred. Day 8 is next in the roadmap sequence.
+**Day 7 — Week 1 revision, coding assessment, and Python interview mock.** The authoritative roadmap specifies this explicitly. User confirmed Day 7 complete on 17 Nov 2026. Assessment score and mock details were not provided and are not inferred. Day 8 is implemented locally; its assessment is pending.
 
 ---
 
@@ -354,7 +364,464 @@ Day 6: exceptions, logging, debugging, file handling, JSON — lesson studied an
 **Day 4:** conditions + truthiness · short-circuit · `for`/`while` · `range`/`break`/`continue`/`pass` · `enumerate`/`zip` · return vs print · all argument kinds · LEGB, `global`/`nonlocal` · stack frames · mutable defaults · incident validation/scoring/prioritisation/filtering/summary.
 **Day 5:** module vs package · `__init__.py` + public exports · absolute vs relative imports · `__name__` + `python -m` · `sys.path`/`sys.modules` · import cache + side effects · circular imports · stdlib modules · cohesion/coupling · modular monolith · incident package (both designs, and which is which).
 **Day 6:** `try`/`except`/`else`/`finally` · `from exc` chaining · fail fast vs skip-and-log · logging levels · structured logging · `pathlib` + `with` file handling · JSON/JSONL · UTF-8 decode fires on read, not open · generator streaming of log lines · `LogRecord` (level normalised, extra fields) · `LogFileError` vs `LogLineError` · `LogProcessingSummary` counts · structured LLM output + prompt templates in code · sample log: 5 processed, 4 skipped.
+**Day 8:** class vs object · `self` and `__init__` · dataclasses · frozen vs mutable · encapsulation (`_evidence` + tuple property) · abstraction (`Evidence` ABC) · inheritance and overriding (`summary`) · polymorphism · composition (`Investigation` has an `Incident`) · properties · class method (`from_log_record`) vs static method · `super()`/MRO and the `slots=True` caveat · factory (`create_investigation`) · lifecycle `OPEN → IN_PROGRESS → COMPLETED` · duplicate evidence rejection · SOLID (SRP, OCP, DIP).
 
 ## One-minute interview explanation
 
 "I started OpsPilot by setting up a clean Python project and learning how CPython executes source through bytecode, how virtual environments isolate dependencies, and how to run tests and manage the project with Git. I then learned Python's object model, dynamic typing, built-in data types, conversions, operators and string handling, applying those concepts to normalize incident data. Next, I used lists, tuples, sets, dictionaries and comprehensions to process structured records and build a catalog processor. I also learned generators and lazy iteration, which are useful for streaming large log files. Then I studied conditions, loops, function argument types, scope and reusable business logic for incident filtering and prioritization. Finally, I learned how to organize the code into modules and packages, how Python's import system works, how to avoid circular imports and how to keep the OpsPilot codebase modular and testable."
+
+---
+
+## Day 8 — OOP, Classes, Inheritance, Composition and Dataclasses
+
+**Status: lesson delivered; implementation complete and pushed on branch `learning/day-08-oop-domain-models` as PR #3; 50 new tests; full local suite 116 passed; Ruff lint, Ruff format check and Pyright clean; hosted CI passed on Python 3.12 and 3.13. The Day 8 assessment has not been attempted, so the day is not marked complete.**
+
+**Repo state this lesson builds on:** `master` at `1e86f89` (Day 6 JSONL ingestion + investigation prompts). Day 8 adds the first real Investigation and Evidence domain models without touching the existing Incident package or prompt templates.
+
+### 1. Class vs object
+
+A **class** is a blueprint. An **object** (instance) is one concrete thing built from that blueprint.
+
+- `Evidence` is a class: it defines what every piece of evidence must have.
+- `LogEvidence(...)` is an object: one specific log observation with its own `evidence_id`, `source`, `observed_at`, `service_name`, `level` and `message`.
+
+```python
+log = LogEvidence(
+    evidence_id="ev-log-1",
+    source="incident-log.jsonl",
+    observed_at=datetime(2026, 11, 21, 10, 30, tzinfo=UTC),
+    service_name="payments",
+    level="ERROR",
+    message="payment timeout after 5000ms",
+)
+```
+
+Two `LogEvidence` objects can hold different values; they share behaviour, not state.
+
+### 2. Instance attributes and methods, and `self`
+
+Attributes are data stored on an object. Methods are functions defined on the class that receive the instance as their first argument.
+
+```python
+def add_evidence(self, evidence: Evidence) -> None:
+    ...
+    self._evidence.append(evidence)
+```
+
+- `self` is the particular `Investigation` object the method was called on.
+- `self._evidence` is that object's own list, not a global or class-level list.
+- `investigation.add_evidence(item)` is Python's shorthand for `Investigation.add_evidence(investigation, item)`.
+
+### 3. `__init__`
+
+`__init__` initialises a new object. With a dataclass we do not write the boilerplate; `@dataclass` generates it from the annotated fields.
+
+For `LogEvidence`, the generated `__init__` is effectively:
+
+```python
+def __init__(self, evidence_id, source, observed_at, service_name, level, message):
+    self.evidence_id = evidence_id
+    self.source = source
+    self.observed_at = observed_at
+    self.service_name = service_name
+    self.level = level
+    self.message = message
+    self.__post_init__()
+```
+
+`__post_init__` is the dataclass hook that runs after the generated `__init__`. OpsPilot uses it for validation:
+
+- `Evidence.__post_init__` rejects empty IDs/sources and naive timestamps.
+- Each subclass validates its own fields and then calls the base validator.
+- `Investigation.__post_init__` validates the ID, the composed incident and the timestamp.
+
+`Investigation` also has fields with `init=False`: `_status` and `_evidence` are created internally, so callers cannot pass them in and bypass the lifecycle or inject a shared list.
+
+### 4. Dataclasses
+
+`@dataclass` generates `__init__`, `__repr__` and `__eq__` from annotations. That gives OpsPilot:
+
+- explicit, readable domain fields;
+- useful debug output such as `LogEvidence(evidence_id='ev-log-1', ...)`;
+- value equality, useful in tests and assertions;
+- less boilerplate than hand-written classes.
+
+The mutable collection uses a factory, never a shared default:
+
+```python
+_evidence: list[Evidence] = field(default_factory=list, init=False, repr=False)
+```
+
+`default_factory=list` creates a new list per investigation. `field(default=[])` would share one list across every instance — the classic mutable-default bug from Day 4.
+
+### 5. Frozen vs mutable dataclasses
+
+**Evidence is frozen** (`@dataclass(frozen=True, slots=True)`):
+
+```python
+evidence.level = "INFO"  # raises FrozenInstanceError
+```
+
+Evidence is a recorded fact. Editing it after collection would rewrite history and invalidate conclusions built on it. Frozen objects are also safe to share and reason about.
+
+**Investigation is mutable** (`@dataclass(slots=True)`):
+
+```python
+investigation.start()
+investigation.add_evidence(log)
+investigation.complete()
+```
+
+An investigation is a process. It moves through states and accumulates evidence. Mutability is contained: callers cannot assign `status`, cannot append to the internal list, and must use the lifecycle methods.
+
+`slots=True` prevents arbitrary new attributes and reduces per-object memory. It has a real caveat, documented below in the `super()` section.
+
+### 6. Encapsulation
+
+Encapsulation means protecting internal state behind a controlled interface.
+
+In `Investigation`:
+
+```python
+_status: InvestigationStatus = field(default=..., init=False, repr=False)
+_evidence: list[Evidence] = field(default_factory=list, init=False, repr=False)
+
+
+@property
+def status(self) -> InvestigationStatus:
+    return self._status
+
+
+@property
+def evidence(self) -> tuple[Evidence, ...]:
+    return tuple(self._evidence)
+```
+
+- `_status` and `_evidence` are private by convention (leading underscore).
+- `status` and `evidence` are read-only properties: there is no setter.
+- `evidence` returns a **tuple snapshot**, not the mutable list.
+- `add_evidence()`, `start()` and `complete()` are the only supported mutation paths.
+
+Honest limit: Python does not enforce privacy. A determined caller can still touch `investigation._evidence`. The `_` prefix is a design signal, not a security boundary. The public API makes the correct path obvious and keeps domain rules in one place.
+
+### 7. Abstraction
+
+`Evidence` is an abstract base class:
+
+```python
+@dataclass(frozen=True, slots=True)
+class Evidence(ABC):
+    evidence_id: str
+    source: str
+    observed_at: datetime
+
+    def __post_init__(self) -> None: ...  # common validation
+
+    @property
+    @abstractmethod
+    def summary(self) -> str:
+        """Return a short, human-readable description."""
+```
+
+- `Evidence(...)` raises `TypeError` — the abstraction cannot be instantiated.
+- Subclasses must implement `summary`.
+- Callers can depend on the contract (`evidence_id`, `source`, `observed_at`, `summary`) without knowing the concrete type.
+
+### 8. Inheritance
+
+```text
+Evidence (abstract)
+├── LogEvidence
+├── MetricEvidence
+└── DeploymentEvidence
+```
+
+`LogEvidence` inherits the three common fields and the common validation. It adds `service_name`, `level` and `message`, then validates those in its own `__post_init__`.
+
+Inheritance is appropriate here because the relationship is genuinely **is-a**: a `LogEvidence` *is* a piece of `Evidence`.
+
+### 9. Method overriding
+
+Each subclass overrides the abstract `summary` property:
+
+```python
+# LogEvidence
+return f"[{self.level}] {self.service_name}: {self.message}"
+
+# MetricEvidence
+return (
+    f"{self.service_name} {self.metric_name}={self.value:g}{self.unit} "
+    f"over {self.window_seconds}s"
+)
+
+# DeploymentEvidence
+return (
+    f"{self.service_name} deployment {self.deployment_id} "
+    f"({self.version}) to {self.environment}: {self.status.value}"
+)
+```
+
+The base defines the contract; the subclass supplies the behaviour that fits its data. A subclass that forgets `summary` remains abstract and cannot be instantiated.
+
+### 10. Polymorphism
+
+Polymorphism lets calling code use one interface for several concrete types:
+
+```python
+for item in investigation.evidence:
+    print(item.summary)
+```
+
+No `isinstance(item, LogEvidence)` branching. `add_evidence()` accepts the `Evidence` abstraction, so a future `TraceEvidence` or `RunbookEvidence` can be added without changing `Investigation`.
+
+`isinstance(evidence, Evidence)` inside `add_evidence()` is a boundary guard, not polymorphic dispatch. It rejects arbitrary objects; it does not choose behaviour by concrete class.
+
+### 11. Composition vs inheritance
+
+```python
+@dataclass(slots=True)
+class Investigation:
+    investigation_id: str
+    incident: Incident
+    ...
+```
+
+`Investigation` **has an** `Incident`; it does not inherit from `Incident`.
+
+Why composition is preferred here:
+
+- An investigation is not a special kind of incident.
+- The incident can stay immutable while the investigation evolves.
+- One incident could later have multiple investigations.
+- Each concept can be tested independently.
+- It avoids a god object that mixes incident facts with investigation state.
+
+Inheritance is still correct for the Evidence hierarchy because that relationship is is-a. The rule is not "never inherit"; it is "inherit only when the subtype genuinely is the base type".
+
+### 12. Instance methods
+
+`start()`, `complete()` and `add_evidence()` are instance methods: they read and change the state of one investigation.
+
+```python
+def start(self) -> None:
+    if self._status is not InvestigationStatus.OPEN:
+        raise ValueError(...)
+    self._status = InvestigationStatus.IN_PROGRESS
+```
+
+The lifecycle check and the transition live together. A caller cannot forget the rule because the only way to change status is through the method.
+
+### 13. Class methods vs static methods
+
+A **class method** receives the class (`cls`), not the instance. OpsPilot uses one as an alternative constructor:
+
+```python
+@classmethod
+def from_log_record(
+    cls, record: LogRecord, *, evidence_id: str, source: str, observed_at: datetime
+) -> LogEvidence:
+    return cls(
+        evidence_id=evidence_id,
+        source=source,
+        observed_at=observed_at,
+        service_name=record.service,
+        level=record.level,
+        message=record.message,
+    )
+```
+
+This reuses the Day 6 `LogRecord` instead of duplicating JSONL parsing. `cls` also means a subclass would construct its own type.
+
+A **static method** receives neither `self` nor `cls`. It is a utility logically tied to the class but not needing class state. OpsPilot's validation helpers (`_require_non_empty`, `_require_timezone_aware`) are module-level functions instead of static methods because they are shared by several classes and do not belong to one type. A static method would look like:
+
+```python
+@staticmethod
+def is_supported_level(level: str) -> bool:
+    return level.upper() in LOG_LEVELS
+```
+
+Use a static method when the function belongs conceptually to the class but needs no instance or class data; otherwise prefer a module function or an instance method.
+
+### 14. Properties and access conventions
+
+A `@property` exposes a computed or protected value through attribute syntax:
+
+```python
+investigation.status  # calls the getter
+investigation.evidence  # returns tuple(self._evidence)
+```
+
+No setter means assignment raises `AttributeError`:
+
+```python
+investigation.status = InvestigationStatus.COMPLETED  # AttributeError
+```
+
+That is the point: lifecycle transitions must go through `start()` / `complete()`. `evidence` returns a new tuple each call, so a snapshot cannot be used to mutate the internal list.
+
+Inside `__post_init__`, frozen dataclasses use `object.__setattr__` for controlled normalisation:
+
+```python
+object.__setattr__(self, "level", self.level.strip().upper())
+object.__setattr__(self, "value", float(self.value))
+```
+
+This is initialisation-time normalisation, not a public mutation loophole.
+
+### 15. `super()` and MRO at a conceptual level
+
+MRO (Method Resolution Order) is the order Python searches classes for a method. For `LogEvidence` it is roughly:
+
+```text
+LogEvidence → Evidence → ABC → object
+```
+
+`super()` calls the next implementation in that chain. It is essential for cooperative inheritance and for base-class setup.
+
+**Real caveat found in this implementation:** `@dataclass(slots=True)` recreates the class. In Python 3.12, zero-argument `super()` inside a recreated class can fail with:
+
+```text
+TypeError: super(type, obj): obj must be an instance or subtype of type
+```
+
+The reason is that the `__class__` cell used by zero-argument `super()` still points at the original class, not the recreated one. OpsPilot therefore calls the base validator explicitly:
+
+```python
+def __post_init__(self) -> None:
+    Evidence.__post_init__(self)
+    ...
+```
+
+This is deliberate and documented in the code. Without `slots=True`, `super().__post_init__()` would be the normal choice.
+
+### 16. Why the Investigation aggregate is mutable
+
+An investigation has a lifecycle and accumulates evidence. Rebuilding a new immutable aggregate on every added fact would:
+
+- force every caller to replace its reference;
+- make partial state harder to reason about;
+- obscure the controlled transition rules.
+
+Instead, mutability is local to `Investigation` and guarded by methods. Evidence, the facts inside it, stays immutable. This is a common DDD pattern: mutable aggregate root, immutable value objects.
+
+### 17. How the Evidence hierarchy works
+
+1. `Evidence` validates the common fields and defines `summary`.
+2. `LogEvidence`, `MetricEvidence` and `DeploymentEvidence` add their own fields.
+3. Each subclass validates its own fields and calls the base validator.
+4. Each subclass implements `summary`.
+5. `Investigation` stores `Evidence`, not concrete classes.
+6. Tests iterate the collection and call `summary` without type checks.
+
+Adding a new evidence type requires a new subclass and tests — not a change to `Investigation`. That is the Open/Closed Principle.
+
+### 18. How the factory works
+
+```python
+def create_investigation(*, incident: Incident) -> Investigation:
+    return Investigation(
+        investigation_id=str(uuid4()),
+        incident=incident,
+        created_at=datetime.now(UTC),
+    )
+```
+
+- Keyword-only (`*`) prevents positional-argument mistakes.
+- UUID4 gives the investigation its own identity, separate from the incident ID.
+- `datetime.now(UTC)` produces a timezone-aware timestamp.
+- The existing `Incident` object is reused by reference, never copied or mutated.
+- Object construction stays in one place, so a future ID policy or clock injection changes one function.
+
+It is a plain function, not a framework. No factory registry or dependency-injection container is justified at this stage.
+
+### 19. Relevant SOLID principles
+
+- **Single Responsibility:** `Incident` states impact; `Evidence` represents a fact; `Investigation` owns lifecycle and evidence; the factory handles construction.
+- **Open/Closed:** new evidence types extend `Evidence` without modifying `Investigation`.
+- **Liskov Substitution:** every concrete evidence type can be used wherever `Evidence` is expected and honours the same contract.
+- **Interface Segregation:** the `Evidence` contract is small — three fields plus `summary`.
+- **Dependency Inversion:** `Investigation.add_evidence()` depends on the `Evidence` abstraction, not on `LogEvidence`/`MetricEvidence`/`DeploymentEvidence`.
+
+Not every principle needs a new abstraction. The model deliberately avoids interfaces, registries and base classes that have no current use.
+
+### 20. OpsPilot code map
+
+| Concept | Where it lives |
+|---|---|
+| Class / object | `Evidence`, `LogEvidence`, `Investigation` |
+| Encapsulation | `Investigation._status`, `_evidence`, read-only properties |
+| Abstraction | `Evidence(ABC)` with abstract `summary` |
+| Inheritance | `LogEvidence`, `MetricEvidence`, `DeploymentEvidence` |
+| Method overriding | Each concrete `summary` property |
+| Polymorphism | Iterating `investigation.evidence` and calling `summary` |
+| Composition | `Investigation.incident` and `Investigation._evidence` |
+| Dataclass | All domain models |
+| Frozen vs mutable | Frozen evidence; mutable investigation |
+| Factory | `create_investigation()` |
+| Controlled transitions | `start()`, `complete()`, `add_evidence()` |
+| Class method | `LogEvidence.from_log_record()` |
+| Properties | `Investigation.status`, `Investigation.evidence` |
+
+### 21. Interview questions
+
+**Basic**
+
+1. **Q: What is the difference between a class and an object?**
+   A: A class is the blueprint that defines fields and behaviour; an object is one instance with its own state. `Evidence` is a class; one `LogEvidence` is an object.
+
+2. **Q: What is `self`?**
+   A: The instance the method was called on. `investigation.add_evidence(item)` passes `investigation` as `self`, so the method mutates that investigation's evidence list.
+
+3. **Q: What does `@dataclass` generate?**
+   A: `__init__`, `__repr__` and `__eq__` from the annotated fields. `__post_init__` runs after the generated initialiser for validation or normalisation.
+
+4. **Q: What is a frozen dataclass?**
+   A: A dataclass that raises `FrozenInstanceError` on attribute assignment. OpsPilot uses it for evidence because a recorded fact must not be rewritten.
+
+5. **Q: Inheritance vs composition?**
+   A: Inheritance is an is-a relationship (`LogEvidence` is `Evidence`). Composition is a has-a relationship (`Investigation` has an `Incident`). Prefer composition when the relationship is not genuinely is-a.
+
+**Intermediate**
+
+6. **Q: Why is `Evidence` abstract?**
+   A: It defines the common contract and prevents meaningless direct instances. Only concrete evidence types can be created, and each must implement `summary`.
+
+7. **Q: How does polymorphism appear in this code?**
+   A: `Investigation` stores `Evidence` objects and callers invoke `item.summary` without checking the concrete class. Adding a new evidence type does not change the calling code.
+
+8. **Q: Why is `Evidence` immutable but `Investigation` mutable?**
+   A: Evidence is a historical fact; changing it would corrupt the investigation record. An investigation is an evolving process that accumulates evidence and changes status, so it is mutable but controlled.
+
+9. **Q: How is encapsulation enforced in Python, and what are its limits?**
+   A: With private-by-convention fields (`_evidence`), read-only properties and mutation methods. Python does not enforce privacy; a caller can still reach `_evidence`. The design makes the supported path obvious and keeps rules centralised.
+
+10. **Q: What is the difference between a class method and a static method?**
+    A: A class method receives `cls` and can build instances or respect subclasses — `LogEvidence.from_log_record()`. A static method receives neither `self` nor `cls`; it is a utility tied to the class conceptually but needing no instance or class state.
+
+11. **Q: What is the MRO?**
+    A: The order Python searches base classes for a method, e.g. `LogEvidence → Evidence → ABC → object`. `super()` calls the next class in that order.
+
+**Senior**
+
+12. **Q: Why not make `Investigation` inherit from `Incident`?**
+    A: An investigation is not an incident; it is work performed because of one. Inheritance would expose incident fields as investigation fields, mix two lifecycles, prevent one incident from having multiple investigations, and create a god object. Composition keeps both models independent.
+
+13. **Q: How does this design satisfy Open/Closed and Dependency Inversion?**
+    A: `Investigation` depends on the `Evidence` abstraction, not concrete classes. A new evidence type is a new subclass implementing `summary`; `Investigation` and its callers do not change. That is OCP, and depending on the abstraction rather than concretions is DIP.
+
+14. **Q: What are the trade-offs of validating in `__post_init__`?**
+    A: It guarantees every constructed object is valid and keeps rules close to the data. The costs are that construction can raise, validation is tied to the constructor, and cross-object rules (unique evidence IDs, lifecycle) cannot live there — those belong in the aggregate methods.
+
+15. **Q: How would persistence change this model?**
+    A: It should not change the domain rules. A repository/mapper outside the domain would translate `Incident`, `Investigation` and `Evidence` to rows and back, reconstructing the aggregate through its constructor or a dedicated rehydration path. ORM concerns must not leak into these classes.
+
+16. **Q: How would you add a new evidence type safely?**
+    A: Subclass `Evidence`, validate the new fields, implement `summary`, add tests, and add it to the package exports if it is public. No change to `Investigation` is needed. If consumers must branch on type, that is a sign the abstraction is incomplete.
+
+### 22. Interview-ready explanation (30–40 seconds)
+
+"On Day 8 I implemented OpsPilot's first Investigation and Evidence domain model. `Evidence` is an abstract, frozen dataclass with common fields and a `summary` contract; `LogEvidence`, `MetricEvidence` and `DeploymentEvidence` inherit from it and override `summary`, which gives polymorphism without type checks. `Investigation` is a mutable aggregate that composes an existing `Incident` and owns a private evidence list, exposed as a read-only tuple. Its `OPEN → IN_PROGRESS → COMPLETED` lifecycle is enforced by `start()`, `add_evidence()` and `complete()`, so callers cannot bypass the rules. A keyword-only factory creates investigations with UUID4 IDs and UTC timestamps. I verified it with 50 new tests, a 116-test full suite, Ruff and Pyright."
+
+### 23. Assessment and next step
+
+The Day 8 coding assessment has not been attempted. Do not mark Day 8 complete until it is completed and scored. Day 9 is type hints, generics, protocols and Pydantic — not started. Keep the Day 2 practical, Day 6 hosted-CI and Day 7 assessment-detail gaps visible in `docs/progress.md`.
